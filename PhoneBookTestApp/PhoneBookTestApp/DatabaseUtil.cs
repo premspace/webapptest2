@@ -1,39 +1,45 @@
 ﻿using System;
 using System.Data.SQLite;
+using PhoneBookTestApp.Log;
 
 namespace PhoneBookTestApp
 {
     public class DatabaseUtil
     {
+        AbstractLogger cLogger = new ConsoleLogger();
+        AbstractLogger fLogger = new FileLogger();
+
         public static void initializeDatabase()
         {
-            var dbConnection = new SQLiteConnection("Data Source= MyDatabase.sqlite;Version=3;");
+            var dbConnection = GetConnection();
             dbConnection.Open();
 
             try
             {
                 SQLiteCommand command =
                     new SQLiteCommand(
-                        "create table PHONEBOOK (NAME varchar(255), PHONENUMBER varchar(255), ADDRESS varchar(255))",
+                        Constant.SQL_CREATE_TABLE_PERSON,
                         dbConnection);
                 command.ExecuteNonQuery();
 
                 command =
                     new SQLiteCommand(
-                        "INSERT INTO PHONEBOOK (NAME, PHONENUMBER, ADDRESS) VALUES('Chris Johnson','(321) 231-7876', '452 Freeman Drive, Algonac, MI')",
+                        Constant.SQL_INSERT_TABLE_PERSON_1,
                         dbConnection);
                 command.ExecuteNonQuery();
 
                 command =
                     new SQLiteCommand(
-                        "INSERT INTO PHONEBOOK (NAME, PHONENUMBER, ADDRESS) VALUES('Dave Williams','(231) 502-1236', '285 Huron St, Port Austin, MI')",
+                        Constant.SQL_INSERT_TABLE_PERSON_2,
                         dbConnection);
                 command.ExecuteNonQuery();
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                Logger.Log(LoggerType.Console, "DB initialization Failed!", ex.StackTrace);
+                Logger.Log(LoggerType.File, "DB initialization Failed!", ex.StackTrace);
+                throw ex;
             }
             finally
             {
@@ -43,28 +49,38 @@ namespace PhoneBookTestApp
 
         public static SQLiteConnection GetConnection()
         {
-            var dbConnection = new SQLiteConnection("Data Source= MyDatabase.sqlite;Version=3;");
-            dbConnection.Open();
+            try
+            {
+                string dbConnStr = System.Configuration.ConfigurationManager.ConnectionStrings["PhoneBookEntities"].ToString();
+                var dbConnection = new SQLiteConnection(dbConnStr);
 
-            return dbConnection;
+                return dbConnection;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log(LoggerType.Console, "Create DB connection Failed!", ex.StackTrace);
+                Logger.Log(LoggerType.File, "Create DB connection Failed!", ex.StackTrace);
+                throw ex;
+            }
         }
 
         public static void CleanUp()
         {
-            var dbConnection = new SQLiteConnection("Data Source= MyDatabase.sqlite;Version=3;");
+            var dbConnection = GetConnection();
             dbConnection.Open();
 
             try
             {
                 SQLiteCommand command =
-                    new SQLiteCommand(
-                        "drop table PHONEBOOK",
+                    new SQLiteCommand(Constant.SQL_DROP_TABLE_PERSON,
                         dbConnection);
                 command.ExecuteNonQuery();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                Logger.Log(LoggerType.Console, "DB Cleanup Failed!", ex.StackTrace);
+                Logger.Log(LoggerType.File, "DB Cleanup Failed!", ex.StackTrace);
+                throw ex;
             }
             finally
             {
